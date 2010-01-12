@@ -79,7 +79,7 @@ void ExampleAIModule::onEnd(bool isWinner)
 
 void ExampleAIModule::onFrame()
 {
-Broodwar->pingMinimap(Position(mapWidth/2, mapHeight/2));
+	Broodwar->drawCircle(CoordinateType::Map,mapWidth/2, mapHeight/2,20,Colors::Green,true);
   if (show_visibility_data)
   {    
     for(int x=0;x<Broodwar->mapWidth();x++)
@@ -247,8 +247,8 @@ void ExampleAIModule::onUnitShow(BWAPI::Unit* unit)
 }
 void ExampleAIModule::onUnitHide(BWAPI::Unit* unit)
 {
-  if (!Broodwar->isReplay())
-    Broodwar->sendText("A %s [%x] was last seen at (%d,%d)",unit->getType().getName().c_str(),unit,unit->getPosition().x(),unit->getPosition().y());
+ // if (!Broodwar->isReplay())
+   // Broodwar->sendText("A %s [%x] was last seen at (%d,%d)",unit->getType().getName().c_str(),unit,unit->getPosition().x(),unit->getPosition().y());
 }
 void ExampleAIModule::onUnitRenegade(BWAPI::Unit* unit)
 {
@@ -411,7 +411,7 @@ bool ExampleAIModule::close(Position p1, Position p2)
 
 bool ExampleAIModule::close(TilePosition p1, TilePosition p2)
 {
-	return ((abs(p1.x() - p2.x()) <= 1) && (abs(p1.y() - p2.y()) <= 1));
+	return ((abs(p1.x() - p2.x()) < 1) && (abs(p1.y() - p2.y()) < 1));
 }
 
  // find p' from p about a
@@ -468,7 +468,7 @@ Position ExampleAIModule::valid(Position from, Position to)
 
 Position ExampleAIModule::calcCurrentAim()
 {
-	return Position(mapWidth/2+pos_x[currentAimPos]*(mapWidth/2-4*TILE_SIZE*circleCount), mapHeight/2+pos_y[currentAimPos]*(mapHeight/2-4*TILE_SIZE*circleCount));
+	return Position(mapWidth/2+pos_x[currentAimPos]*(mapWidth/2-20*TILE_SIZE*circleCount), mapHeight/2+pos_y[currentAimPos]*(mapHeight/2-20*TILE_SIZE*circleCount));
 }
 
 
@@ -480,7 +480,7 @@ Position ExampleAIModule::huntEnemies()
 		Broodwar->printf("in the middle");	
 		direction *= -1;
 	}
-	if (getAvgPosition(Broodwar->self()).getDistance(calcCurrentAim()) < 4*TILE_SIZE) {
+	if (getAvgPosition(Broodwar->self()).getDistance(calcCurrentAim()) < 15*TILE_SIZE) {
 		currentAimPos = ++currentAimPos % 4;
 		Broodwar->printf("switching aim");
 	}
@@ -499,19 +499,22 @@ void ExampleAIModule::callJennyCode()
 	Position enemyCenter;
 	if ((Broodwar->enemy() == NULL) || (Broodwar->enemy()->getUnits().size() == 0)) {
 		enemyCenter = huntEnemies();
-		Broodwar->printf("going for %d %d", enemyCenter.x(), enemyCenter.y());
+		Broodwar->drawCircle(CoordinateType::Map,enemyCenter.x(), enemyCenter.y(),20,Colors::Yellow,true);
 	} else {
 		enemyCenter = getAvgPosition(Broodwar->enemy());
 	}
+	int unitnum=-1;
 	//Broodwar->printf("going for %d %d", enemyCenter.x(), enemyCenter.y());
 	for(std::set<Unit*>::const_iterator i=Broodwar->self()->getUnits().begin();i!=Broodwar->self()->getUnits().end();i++)
     {
+		unitnum++;
 		// first prioriy, if less than 2 strikes away from death, run away
 
 		// otherwise, if there are no enemies nearby, get yourself to the center of the action
 		Position position = (*i)->getPosition();
 		std::set<Unit*> closeEnemyUnits;
 		if (Broodwar->enemy() == NULL) {
+			Broodwar->printf("unit %d is attack moving to %d %d",unitnum, enemyCenter.x(), enemyCenter.y());
 			(*i)->attackMove(valid(position, enemyCenter));
 			continue;
 		}
@@ -521,6 +524,7 @@ void ExampleAIModule::callJennyCode()
 		if (closeEnemyUnits.empty()) {
 			Position goTo = getPointReflection(position, enemyCenter);
 			if (Broodwar->getFrameCount()%45==0) {
+				Broodwar->printf("unit %d attack moving to %d %d",unitnum, goTo.x(), goTo.y());
 				(*i)->attackMove(valid(position, goTo));
 			}
 			continue;
@@ -539,6 +543,7 @@ void ExampleAIModule::callJennyCode()
 		}
 		if (((*i)->getGroundWeaponCooldown() > 15) && (lowest != (*i)->getTarget()))
 		{
+			Broodwar->printf("unit %d changing who to attack", unitnum);
 			(*i)->attackUnit(lowest);
 		}
 		continue;
