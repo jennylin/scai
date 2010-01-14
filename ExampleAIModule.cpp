@@ -79,7 +79,6 @@ void ExampleAIModule::onEnd(bool isWinner)
 
 void ExampleAIModule::onFrame()
 {
-	Broodwar->drawCircle(CoordinateType::Map,mapWidth/2, mapHeight/2,20,Colors::Green,true);
   if (show_visibility_data)
   {    
     for(int x=0;x<Broodwar->mapWidth();x++)
@@ -468,7 +467,10 @@ Position ExampleAIModule::valid(Position from, Position to)
 
 Position ExampleAIModule::calcCurrentAim()
 {
-	return Position(mapWidth/2+pos_x[currentAimPos]*(mapWidth/2-20*TILE_SIZE*circleCount), mapHeight/2+pos_y[currentAimPos]*(mapHeight/2-20*TILE_SIZE*circleCount));
+	int x=mapWidth/2+pos_x[currentAimPos]*(mapWidth/2-20*TILE_SIZE*circleCount);
+	int y=mapHeight/2+pos_y[currentAimPos]*(mapHeight/2-20*TILE_SIZE*circleCount);
+	//Broodwar->printf("going to return currentAim as %d %d", x, y);
+	return Position(x,y);
 }
 
 
@@ -482,11 +484,11 @@ Position ExampleAIModule::huntEnemies()
 	}
 	if (getAvgPosition(Broodwar->self()).getDistance(calcCurrentAim()) < 15*TILE_SIZE) {
 		currentAimPos = ++currentAimPos % 4;
-		Broodwar->printf("switching aim");
+		Broodwar->printf("switching aim to %d", currentAimPos);
 	}
 
 	if (currentAimPos == startPos) {
-		Broodwar->printf("changing circle size");
+		Broodwar->printf("changing circle size since we're both %d", startPos);
 		circleCount += direction;
 	}
 
@@ -499,7 +501,6 @@ void ExampleAIModule::callJennyCode()
 	Position enemyCenter;
 	if ((Broodwar->enemy() == NULL) || (Broodwar->enemy()->getUnits().size() == 0)) {
 		enemyCenter = huntEnemies();
-		Broodwar->drawCircle(CoordinateType::Map,enemyCenter.x(), enemyCenter.y(),20,Colors::Yellow,true);
 	} else {
 		enemyCenter = getAvgPosition(Broodwar->enemy());
 	}
@@ -513,8 +514,7 @@ void ExampleAIModule::callJennyCode()
 		// otherwise, if there are no enemies nearby, get yourself to the center of the action
 		Position position = (*i)->getPosition();
 		std::set<Unit*> closeEnemyUnits;
-		if (Broodwar->enemy() == NULL) {
-			Broodwar->printf("unit %d is attack moving to %d %d",unitnum, enemyCenter.x(), enemyCenter.y());
+		if ((Broodwar->enemy() == NULL) || (Broodwar->enemy()->getUnits().size() == 0)) {
 			(*i)->attackMove(valid(position, enemyCenter));
 			continue;
 		}
@@ -524,7 +524,6 @@ void ExampleAIModule::callJennyCode()
 		if (closeEnemyUnits.empty()) {
 			Position goTo = getPointReflection(position, enemyCenter);
 			if (Broodwar->getFrameCount()%45==0) {
-				Broodwar->printf("unit %d attack moving to %d %d",unitnum, goTo.x(), goTo.y());
 				(*i)->attackMove(valid(position, goTo));
 			}
 			continue;
